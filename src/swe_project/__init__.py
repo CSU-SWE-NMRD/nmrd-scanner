@@ -1,6 +1,22 @@
+import sys
 import torch
 from PIL import Image
 from torchvision import transforms, models
+
+if len(sys.argv) >= 2:
+    match sys.argv[1]:
+        case "noah":
+            import noah
+            noah.main()
+        case "mason":
+            import mason
+            mason.main()
+        case "rj":
+            import rj
+            rj.main()
+        case "darius":
+            import darius
+            darius.main()
 
 model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
 model.eval()
