@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 
 data_dir = 'data/chest_xray'
 
+def predict(file_path):
+    return f"this is a dummy prediction for {file_path}"
+
 def main():
     # based on https://docs.pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
     # TODO: different transformations for training?

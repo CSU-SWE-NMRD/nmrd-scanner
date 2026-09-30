@@ -16,4 +16,5 @@ if len(sys.argv) >= 2:
             from swe_project import darius
             darius.main()
 
-
+def main():
+    pass
