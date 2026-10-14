@@ -14,9 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 data_dir = 'data/chest_xray'
-
-def predict(file_path):
-    return f"this is a dummy prediction for {file_path}"
+model_path = 'best_model_params.pt'
 
 # based on https://docs.pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
 # TODO: different transformations for training?
@@ -44,30 +42,54 @@ class_names = image_datasets['train'].classes
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f"Using {device} device")
 
-def main():
-    model_conv = torchvision.models.resnet18(weights='IMAGENET1K_V1')
-    for param in model_conv.parameters():
-        param.requires_grad = False
-        
-    # Parameters of newly constructed modules have requires_grad=True by default
-    num_ftrs = model_conv.fc.in_features
-    model_conv.fc = nn.Linear(num_ftrs, 2)
-    
-    model_conv = model_conv.to(device)
-    
-    criterion = nn.CrossEntropyLoss()
-    
-    # Observe that only parameters of final layer are being optimized as
-    # opposed to before.
-    optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=0.001, momentum=0.9)
-    
-    # Decay LR by a factor of 0.1 every 7 epochs
-    exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
+model_conv = torchvision.models.resnet18(weights='IMAGENET1K_V1')
+for param in model_conv.parameters():
+    param.requires_grad = False
 
-    model_conv = train_model(model_conv, criterion, optimizer_conv,
-                             exp_lr_scheduler, num_epochs=25)
+# Parameters of newly constructed modules have requires_grad=True by default
+num_ftrs = model_conv.fc.in_features
+model_conv.fc = nn.Linear(num_ftrs, 2)
+
+model_conv = model_conv.to(device)
+
+criterion = nn.CrossEntropyLoss()
+
+# Observe that only parameters of final layer are being optimized as
+# opposed to before.
+optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=0.001, momentum=0.9)
+
+# Decay LR by a factor of 0.1 every 7 epochs
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
+
+# Load current trained model
+model_conv.load_state_dict(torch.load(model_path, weights_only=True, map_location=device))
+
+def predict(file_path):
+    model = model_conv
     
-    visualize_model(model_conv)
+    was_training = model.training
+    model.eval()
+
+    img = Image.open(file_path).convert("RGB")
+    img = preprocess(img).unsqueeze(0)
+
+    with torch.no_grad():
+        outputs = model(img)
+        _, preds = torch.max(outputs, 1)
+        return class_names[preds[0]]
+    
+    model.train(mode=was_training)
+    return f"prediction failed"
+
+def main():
+    should_train = input('train? y/n: ')
+
+    model = model_conv
+    if should_train == 'y':
+        model = train_model(model, criterion, optimizer_conv,
+                            exp_lr_scheduler, num_epochs=25)
+    
+    visualize_model(model)
     plt.ioff()
     plt.show()
 
@@ -162,10 +184,22 @@ def visualize_model(model, num_images=6):
                 images_so_far += 1
                 ax = plt.subplot(num_images//2, 2, images_so_far)
                 ax.axis('off')
-                ax.set_title(f'predicted: {class_names[preds[j]]}')
+                ax.set_title(f'predicted: {class_names[preds[j]]}\nactual: {class_names[labels[j]]}')
                 imshow(inputs.cpu().data[j])
 
                 if images_so_far == num_images:
                     model.train(mode=was_training)
                     return
         model.train(mode=was_training)
+
+def imshow(inp, title=None):
+    """Display image for Tensor."""
+    inp = inp.numpy().transpose((1, 2, 0))
+    mean = np.array([0.485, 0.456, 0.406])
+    std = np.array([0.229, 0.224, 0.225])
+    inp = std * inp + mean
+    inp = np.clip(inp, 0, 1)
+    plt.imshow(inp)
+    if title is not None:
+        plt.title(title)
+    plt.pause(0.001)  # pause a bit so that plots are updated
