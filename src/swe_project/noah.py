@@ -17,22 +17,31 @@ data_dir = 'data/chest_xray'
 model_path = 'best_model_params.pt'
 
 # based on https://docs.pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
-# TODO: different transformations for training?
-preprocess = v2.Compose([
-    v2.ToImage(),
-    v2.RGB(),
-    v2.Resize(256),
-    v2.CenterCrop(224),
-    v2.ToDtype(torch.float32, scale=True),
-    v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
+preprocess = {
+    'train': v2.Compose([
+        v2.ToImage(),
+        v2.RGB(),
+        v2.RandomResizedCrop(224, scale=(0.9,1.0)),
+        v2.RandomHorizontalFlip(),
+        v2.ToDtype(torch.float32, scale=True),
+        v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]),
+    'val': v2.Compose([
+        v2.ToImage(),
+        v2.RGB(),
+        v2.Resize(224),
+        v2.CenterCrop(224),
+        v2.ToDtype(torch.float32, scale=True),
+        v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]),
+}
 
 image_datasets = {}
 dataloaders = {}
 dataset_sizes = {}
 
 for x in ['train', 'val']:
-    image_datasets[x] = datasets.ImageFolder(os.path.join(data_dir, x), preprocess)
+    image_datasets[x] = datasets.ImageFolder(os.path.join(data_dir, x), preprocess[x])
     dataloaders[x] = torch.utils.data.DataLoader(image_datasets[x], batch_size=4, shuffle=True, num_workers=0)
     dataset_sizes[x] = len(image_datasets[x])
 
@@ -71,10 +80,10 @@ def predict(file_path):
     model.eval()
 
     img = Image.open(file_path).convert("RGB")
-    img = preprocess(img).unsqueeze(0)
+    img = preprocess['val'](img).unsqueeze(0)
 
     with torch.no_grad():
-        outputs = model(img)
+        outputs = model(img.to(device))
         _, preds = torch.max(outputs, 1)
         return class_names[preds[0]]
     
@@ -86,6 +95,12 @@ def main():
 
     model = model_conv
     if should_train == 'y':
+        should_multithread = input('use multithreading? y/n: ')
+        if should_multithread == 'y':
+            for x in ['train', 'val']:
+                dataloaders[x] = torch.utils.data.DataLoader(
+                    image_datasets[x], batch_size=4, shuffle=True, num_workers=4)
+        
         model = train_model(model, criterion, optimizer_conv,
                             exp_lr_scheduler, num_epochs=25)
     
@@ -101,9 +116,9 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
     # Create a temporary directory to save training checkpoints
     with TemporaryDirectory() as tempdir:
-        best_model_params_path = os.path.join(tempdir, 'best_model_params.pt')
+        temp_model_path = os.path.join(tempdir, 'best_model_params.pt')
 
-        torch.save(model.state_dict(), best_model_params_path)
+        torch.save(model.state_dict(), temp_model_path)
         best_acc = 0.0
 
         for epoch in range(num_epochs):
@@ -154,16 +169,19 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                 # deep copy the model
                 if phase == 'val' and epoch_acc > best_acc:
                     best_acc = epoch_acc
-                    torch.save(model.state_dict(), best_model_params_path)
+                    print("using this epoch")
+                    torch.save(model.state_dict(), temp_model_path)
 
             print()
 
         time_elapsed = time.time() - since
         print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
-        print(f'Best val Acc: {best_acc:4f}')
+        print(f'Best accuracy: {best_acc:4f}')
 
         # load best model weights
-        model.load_state_dict(torch.load(best_model_params_path, weights_only=True))
+        model.load_state_dict(torch.load(temp_model_path, weights_only=True))
+
+        torch.save(model.state_dict(), model_path)
     return model
     
 def visualize_model(model, num_images=6):
