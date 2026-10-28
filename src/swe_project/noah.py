@@ -70,10 +70,20 @@ optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=0.001, momentum=0.9)
 # Decay LR by a factor of 0.1 every 7 epochs
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
-# Load current trained model
-model_conv.load_state_dict(torch.load(model_path, weights_only=True, map_location=device))
+num_epochs = 25
 
-def predict(file_path):
+is_model_ready = False
+
+def reload_model_from_file():
+    global is_model_ready
+    
+    is_model_ready = True
+    model_conv.load_state_dict(torch.load(model_path, weights_only=True, map_location=device))
+
+def predict(file_path):    
+    if not is_model_ready:
+        reload_model_from_file()
+    
     model = model_conv
     
     was_training = model.training
@@ -93,25 +103,38 @@ def predict(file_path):
 def main():
     should_train = input('train? y/n: ')
 
-    model = model_conv
     if should_train == 'y':
         should_multithread = input('use multithreading? y/n: ')
         if should_multithread == 'y':
             for x in ['train', 'val']:
                 dataloaders[x] = torch.utils.data.DataLoader(
                     image_datasets[x], batch_size=4, shuffle=True, num_workers=4)
-        
-        model = train_model(model, criterion, optimizer_conv,
-                            exp_lr_scheduler, num_epochs=25)
+
+        train()
+    else:
+        if not is_model_ready:
+            reload_model_from_file()
     
-    visualize_model(model)
+    visualize_model(model_conv)
     plt.ioff()
     plt.show()
 
     input("press enter to quit")
     sys.exit()
 
-def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
+def train():
+    global is_model_ready
+    global model_conv
+    
+    if is_model_ready:
+        # TODO
+        # FIXME
+        print("please dont call train if you have already done a prediction :)")
+    
+    model = model_conv
+    optimizer = optimizer_conv
+    scheduler = exp_lr_scheduler
+    
     since = time.time()
 
     # Create a temporary directory to save training checkpoints
@@ -209,8 +232,11 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
         }
 
         print(statistics)
-    return model
-    
+
+    is_model_ready = True
+    model_conv = model
+    return statistics
+
 def visualize_model(model, num_images=6):
     was_training = model.training
     model.eval()
