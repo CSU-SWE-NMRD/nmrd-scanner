@@ -120,6 +120,11 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
         torch.save(model.state_dict(), temp_model_path)
         best_acc = 0.0
+        best_precision = 0.0
+        best_recall = 0.0
+        best_f1 = 0.0
+        best_confusion = 0.0
+        best_average_precision = 0.0
 
         for epoch in range(num_epochs):
             print(f'Epoch {epoch}/{num_epochs - 1}')
@@ -133,12 +138,17 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                     model.eval()   # Set model to evaluate mode
 
                 running_loss = 0.0
-                running_corrects = 0
+
+                num_true_pos = 0
+                num_true_neg = 0
+                num_false_pos = 0
+                num_false_neg = 0
 
                 # Iterate over data.
                 for inputs, labels in dataloaders[phase]:
                     inputs = inputs.to(device)
                     labels = labels.to(device)
+                    target = labels.data
 
                     # zero the parameter gradients
                     optimizer.zero_grad()
@@ -156,19 +166,25 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
                             optimizer.step()
 
                     # statistics
+                    num_true_pos += ((preds == 1) & (target == 1)).sum().item()
+                    num_false_pos += ((preds == 1) & (target == 0)).sum().item()
+                    num_true_neg += ((preds == 0) & (target == 0)).sum().item()
+                    num_false_neg += ((preds == 0) & (target == 1)).sum().item()                    
                     running_loss += loss.item() * inputs.size(0)
-                    running_corrects += torch.sum(preds == labels.data)
                 if phase == 'train':
                     scheduler.step()
 
                 epoch_loss = running_loss / dataset_sizes[phase]
-                epoch_acc = running_corrects.double() / dataset_sizes[phase]
+                epoch_acc = (num_true_pos + num_true_neg) / dataset_sizes[phase]
 
                 print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
 
                 # deep copy the model
                 if phase == 'val' and epoch_acc > best_acc:
                     best_acc = epoch_acc
+                    best_precision = num_true_pos / (num_true_pos + num_false_pos)
+                    best_recall = num_true_pos / (num_true_pos + num_false_neg)
+                    best_f1 = 2 * ((best_precision * best_recall) / (best_precision + best_recall))
                     print("using this epoch")
                     torch.save(model.state_dict(), temp_model_path)
 
@@ -182,6 +198,17 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
         model.load_state_dict(torch.load(temp_model_path, weights_only=True))
 
         torch.save(model.state_dict(), model_path)
+
+        statistics = {
+            "accuracy": best_acc,
+            "precision": best_precision,
+            "recall": best_recall,
+            "f1": best_f1,
+            "confusion": best_confusion,
+            "average_precision": best_average_precision
+        }
+
+        print(statistics)
     return model
     
 def visualize_model(model, num_images=6):
