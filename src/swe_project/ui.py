@@ -16,8 +16,9 @@ def main():
     image_label.pack(pady=10)
 
     result_label = tk.Label(root, text = "", font=("Arial", 18))
-    result_label.pack(pady=20)
-
+    result_label.pack(padx=20)
+    confidence_label = tk.Label(root, text = "", font=("Arial", 18))
+    confidence_label.pack(padx=20)
     retrain_button = tk.Button(root, text = "Retrain Model", command = classification.retrain_model)
     retrain_button.pack(pady=12)
    
@@ -25,6 +26,8 @@ def main():
         result, confidence = classification.predict(file_path)
         print(confidence)
         result_label.config(text=f"Result: {result}")
+        confidence_label.config(text=f"Confidence: {confidence:.2%}")
+
         
     run_button = tk.Button(root, text = "Run Scanner",command = run_image)
     run_button.place(x=15, y= 60)
@@ -34,6 +37,7 @@ def main():
         nonlocal file_path
 
         result_label.config(text="")
+        confidence_label.config(text="")
 
         file_path = filedialog.askopenfilename(
             title="Select an Image", 
