@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import Label, filedialog
 from PIL import Image, ImageTk
-from swe_project import noah
+from swe_project import classification
+
 def main():
     root = tk.Tk()
     root.title("Chest X-Ray Scanner")
@@ -33,7 +34,7 @@ def main():
         image_label.config(image=photo)
         image_label.image = photo
 
-        result = noah.predict(file_path)
+        result = classification.predict(file_path)
         result_label.config(text=f"Result: {result}")
 
     select_button = tk.Button(root, text = "Select X-Ray", font=("Arial", 14),command=select_image)
