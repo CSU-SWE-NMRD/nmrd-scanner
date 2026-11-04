@@ -22,7 +22,8 @@ def main():
     retrain_button.pack(pady=12)
    
     def run_image():
-        result = classification.predict(file_path)
+        result, confidence = classification.predict(file_path)
+        print(confidence)
         result_label.config(text=f"Result: {result}")
         
     run_button = tk.Button(root, text = "Run Scanner",command = run_image)
@@ -48,8 +49,7 @@ def main():
         image_label.config(image=photo)
         image_label.image = photo
 
-     
-        
+
 
     select_button = tk.Button(root, text = "Select X-Ray", font=("Arial", 14),command=select_image)
     select_button.pack(pady=10)
