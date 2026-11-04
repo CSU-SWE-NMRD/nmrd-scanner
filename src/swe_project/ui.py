@@ -15,10 +15,24 @@ def main():
     image_label = tk.Label(root)
     image_label.pack(pady=10)
 
-    result_label = tk.Label(root, text = "Select image", font=("Arial", 18))
+    result_label = tk.Label(root, text = "", font=("Arial", 18))
     result_label.pack(pady=20)
 
+    retrain_button = tk.Button(root, text = "Retrain Model", command = classification.retrain_model)
+    retrain_button.pack(pady=12)
+   
+    def run_image():
+        result = classification.predict(file_path)
+        result_label.config(text=f"Result: {result}")
+        
+    run_button = tk.Button(root, text = "Run Scanner",command = run_image)
+    run_button.place(x=15, y= 60)
+    
+    file_path = ""
     def select_image():
+        nonlocal file_path
+
+        result_label.config(text="")
 
         file_path = filedialog.askopenfilename(
             title="Select an Image", 
@@ -34,11 +48,12 @@ def main():
         image_label.config(image=photo)
         image_label.image = photo
 
-        result = classification.predict(file_path)
-        result_label.config(text=f"Result: {result}")
+     
+        
 
     select_button = tk.Button(root, text = "Select X-Ray", font=("Arial", 14),command=select_image)
     select_button.pack(pady=10)
+
 
     def statistics():
         statistics = tk.Toplevel(root)
@@ -51,7 +66,6 @@ def main():
         statistics.mainloop()
     button = tk.Button(root, text = "Overall Statistics", command = statistics)
     button.place(x=15, y=15)
-
-
-
+    
+    
     root.mainloop()

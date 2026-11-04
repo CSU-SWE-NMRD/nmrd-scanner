@@ -236,7 +236,8 @@ def train():
     is_model_ready = True
     model_conv = model
     return statistics
-
+def retrain_model():
+    print("retraining model")
 def visualize_model(model, num_images=6):
     was_training = model.training
     model.eval()
