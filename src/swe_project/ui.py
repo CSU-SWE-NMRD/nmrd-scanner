@@ -34,7 +34,8 @@ def main():
         image_label.config(image=photo)
         image_label.image = photo
 
-        result = classification.predict(file_path)
+        result, confidence = classification.predict(file_path)
+        print(confidence)
         result_label.config(text=f"Result: {result}")
 
     select_button = tk.Button(root, text = "Select X-Ray", font=("Arial", 14),command=select_image)

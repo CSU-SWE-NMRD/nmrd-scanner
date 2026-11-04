@@ -4,6 +4,7 @@ import os
 import torch
 from PIL import Image
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim import lr_scheduler
 import torchvision
@@ -94,11 +95,12 @@ def predict(file_path):
 
     with torch.no_grad():
         outputs = model(img.to(device))
-        _, preds = torch.max(outputs, 1)
-        return class_names[preds[0]]
+        probabilities = F.softmax(outputs, dim=1)
+        confidence, preds = torch.max(probabilities, 1)
+        return class_names[preds.item()], confidence.item()
     
     model.train(mode=was_training)
-    return f"prediction failed"
+    return "prediction failed", 0.0
 
 def main():
     should_train = input('train? y/n: ')
