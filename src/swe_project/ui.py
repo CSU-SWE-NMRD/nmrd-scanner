@@ -30,7 +30,7 @@ def main():
 
         
     run_button = tk.Button(root, text = "Run Scanner",command = run_image)
-    run_button.place(x=15, y= 60)
+    run_button.place(x=15, y= 70)
     
     file_path = ""
     def select_image():
@@ -57,19 +57,5 @@ def main():
 
     select_button = tk.Button(root, text = "Select X-Ray", font=("Arial", 14),command=select_image)
     select_button.pack(pady=10)
-
-
-    def statistics():
-        statistics = tk.Toplevel(root)
-        statistics.title("Overall Statistics")
-        statistics.geometry("1000x700")
-        label = tk.Label(statistics, text = "Overall Statistics", font=("Arial", 22, "bold"))
-        label.pack(pady=20)
-        button = tk.Button(statistics, text = "Close", command = statistics.destroy)
-        button.pack(pady=10)
-        statistics.mainloop()
-    button = tk.Button(root, text = "Overall Statistics", command = statistics)
-    button.place(x=15, y=15)
-    
     
     root.mainloop()
