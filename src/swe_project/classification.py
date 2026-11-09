@@ -239,7 +239,11 @@ def train():
     model_conv = model
     return statistics
 def retrain_model():
+    """retrains images"""
     print("retraining model")
+def record_correction(file_path, true_label):
+    """saves feedback images into training folder to be retrained"""
+    print("x-ray recorded")
 def visualize_model(model, num_images=6):
     was_training = model.training
     model.eval()

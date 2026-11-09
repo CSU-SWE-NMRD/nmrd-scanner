@@ -1,7 +1,6 @@
 import tkinter as tk
-from tkinter import Label, filedialog
+from tkinter import Label, filedialog, ttk
 from PIL import Image, ImageTk
-
 from swe_project import classification
 
 def main():
@@ -16,6 +15,8 @@ def main():
     SECONDARY_COLOR = "#6C757D"
     TEXT_MAIN = "#2C3E50"
     ACCENT_COLOR = "#17A2B8"
+    DANGER_COLOR = "#DC3545"
+    SUCCESS_COLOR = "#28A745"
 
 
     root.configure(bg=BG_COLOR)
@@ -27,9 +28,6 @@ def main():
     header_frame = tk.Frame(main_frame, bg=BG_COLOR)
     header_frame.pack(fill=tk.X, pady=(0,15))
 
-
-    
-    
     title_label = tk.Label(
         header_frame, 
         text =("Chest X-Ray Scanner"), 
@@ -64,8 +62,77 @@ def main():
         fg=SECONDARY_COLOR
         )
     confidence_label.pack(anchor="w", padx = 10, pady=2)
-    
-    
+
+    feedback_frame = tk.Frame(results_card, bg=CARD_BG)
+    feedback_frame.pack(anchor="w",padx=10, pady=(8,2))
+
+    feedback_prompt_label = tk.Label(
+        feedback_frame,
+        text="Was the result not accurate? Provide feedback:",
+        font=("Segoe UI", 10),
+        bg = CARD_BG,
+        fg = SECONDARY_COLOR
+    )
+    feedback_prompt_label.pack(side=tk.LEFT)
+
+    class_choices = ["Normal", "Pneumonia", "Other"]
+    correct_label_var = tk.StringVar()
+
+    correction_dropdown = ttk.Combobox(
+        feedback_frame,
+        textvariable = correct_label_var,
+        values=class_choices,
+        state="readonly",
+        width=15
+    )
+    correction_dropdown.pack(side=tk.LEFT, padx=(0,8))
+
+    feedback_status_label = tk.Label(
+        feedback_frame,
+        text="",
+        font=("Segoe UI", 9 ,"italic"),
+        bg=CARD_BG,
+        fg=SUCCESS_COLOR
+    )
+    def submit_feedback():
+        if not file_path:
+            feedback_status_label.config(text="No image loaded", fg=DANGER_COLOR)
+            feedback_status_label.pack(side=tk.LEFT, padx=(5,0))
+            return
+        true_label = correct_label_var.get()
+        if not true_label:
+            feedback_status_label.config(text="Pick Label", fg=DANGER_COLOR)
+            feedback_status_label.pack(side=tk.LEFT,padx=(5,0))
+            return
+        try:
+            feedback_status_label.config(text="Correction recorded", fg=SUCCESS_COLOR)
+            feedback_status_label.pack(side=tk.LEFT, padx=(5,0))
+            root.update_idletasks()
+            
+            classification.record_correction(file_path, true_label)
+            classification.retrain_model()
+            feedback_status_label.config(text="Retrained and Updated", fg=SUCCESS_COLOR)
+            run_image()
+            
+        except Exception as e:
+            feedback_status_label.config(text=f"Error: {e}", fg=DANGER_COLOR)
+            feedback_status_label.pack(side=tk.LEFT, padx=(5,0))
+
+    correction_button = tk.Button(
+        feedback_frame,
+        text="Report Incorrect Result",
+        font=("Segoe UI", 9, "bold"),
+        bg = "#E2E6EA",
+        fg=TEXT_MAIN,
+        activebackground="#CBD3DA",
+        relief=tk.FLAT,
+        padx=10,
+        pady=2,
+        cursor="hand2",
+        command=submit_feedback
+    )
+    correction_button.pack(side=tk.LEFT)
+
     image_card = tk.Frame(main_frame, bg=CARD_BG, bd=1, relief=tk.SOLID, width=520,height=320)
     image_card.pack(fill=tk.BOTH, expand=True, pady=(0,15))
     image_card.pack_propagate(False)
