@@ -5,7 +5,7 @@ from swe_project import classification
 
 def main():
     root = tk.Tk()
-    root.title("Chest X-Ray Scanner")
+    root.title("NMRD Pneumonia X-Ray Scanner")
     root.geometry("1000x800")
 
     BG_COLOR = "#F4F7F6"
@@ -30,7 +30,7 @@ def main():
 
     title_label = tk.Label(
         header_frame, 
-        text =("Chest X-Ray Scanner"), 
+        text =("NMRD Pneumonia X-Ray Scanner"), 
         font=("Segoe UI", 20, "bold"),
         bg=BG_COLOR,
         fg=TEXT_MAIN
