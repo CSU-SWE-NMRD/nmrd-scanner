@@ -110,8 +110,7 @@ def main():
             root.update_idletasks()
             
             classification.record_correction(file_path, true_label)
-            classification.retrain_model()
-            feedback_status_label.config(text="Retrained and Updated", fg=SUCCESS_COLOR)
+            feedback_status_label.config(text="Reported", fg=SUCCESS_COLOR)
             run_image()
             
         except Exception as e:

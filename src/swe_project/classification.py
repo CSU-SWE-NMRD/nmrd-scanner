@@ -238,12 +238,23 @@ def train():
     is_model_ready = True
     model_conv = model
     return statistics
+
+corrections = {}
+
 def retrain_model():
     """retrains images"""
     print("retraining model")
+    print(corrections)
+
 def record_correction(file_path, true_label):
-    """saves feedback images into training folder to be retrained"""
-    print("x-ray recorded")
+    """Keeps track of corrections for later retraining"""
+    global corrections
+    
+    if true_label == 'Normal':
+        corrections[file_path] = 0
+    elif true_label == 'Pneumonia':
+        corrections[file_path] = 1
+
 def visualize_model(model, num_images=6):
     was_training = model.training
     model.eval()
