@@ -160,7 +160,8 @@ def main():
     
     def select_image():
         nonlocal file_path
-
+        
+        feedback_status_label.config(text="")
         result_label.config(text="")
         confidence_label.config(text="")
 
