@@ -1,0 +1,28 @@
+{
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "confusion_matrix": [
+    [
+      8,
+      0
+    ],
+    [
+      0,
+      8
+    ]
+  ],
+  "per_class_ap": [
+    1.0,
+    1.0
+  ],
+  "mAP": 1.0,
+  "num_samples": 16,
+  "class_names": [
+    "NORMAL",
+    "PNEUMONIA"
+  ],
+  "split": "val",
+  "timestamp": "2026-11-11T12:24:37"
+}

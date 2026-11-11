@@ -14,6 +14,8 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import matplotlib.pyplot as plt
 
+from swe_project import metrics
+    
 data_dir = 'data/chest_xray'
 model_path = 'best_model_params.pt'
 
@@ -48,7 +50,6 @@ for x in ['train', 'val']:
 
 class_names = image_datasets['train'].classes
 
-# TODO: GPU acceleration
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f"Using {device} device")
 
@@ -97,11 +98,38 @@ def predict(file_path):
         outputs = model(img.to(device))
         probabilities = F.softmax(outputs, dim=1)
         confidence, preds = torch.max(probabilities, 1)
+        model.train(mode=was_training)
         return class_names[preds.item()], confidence.item()
     
     model.train(mode=was_training)
-    return "prediction failed", 0.0
+    return f"prediction failed"
 
+def evaluate(model=None, split='val', save=True):
+    if(model is None):
+        if not is_model_ready:
+            reload_model_from_file()
+        model = model_conv
+    was_training = model.training
+    model.eval()
+
+    all_labels = []
+    all_probs =[]
+
+    with torch.no_grad():
+        for inputs, labels in dataloaders[split]:
+            outputs = model(inputs.to(device))
+
+            probs = torch.softmax(outputs, dim=1)
+            all_probs.append(probs.cpu().numpy())
+            all_labels.append(labels.numpy())
+
+    model.train(mode=was_training)
+    stats = metrics.compute_metrics(np.concatenate(all_labels), np.concatenate(all_probs), class_names)
+    if save:
+        stats = metrics.save_statistics(stats, split)
+    return stats
+
+            
 def main():
     should_train = input('train? y/n: ')
 
@@ -116,6 +144,7 @@ def main():
     else:
         if not is_model_ready:
             reload_model_from_file()
+        print(evaluate(model_conv, 'val'))
     
     visualize_model(model_conv)
     plt.ioff()
@@ -129,8 +158,6 @@ def train():
     global model_conv
     
     if is_model_ready:
-        # TODO
-        # FIXME
         print("please dont call train if you have already done a prediction :)")
     
     model = model_conv
@@ -145,11 +172,6 @@ def train():
 
         torch.save(model.state_dict(), temp_model_path)
         best_acc = 0.0
-        best_precision = 0.0
-        best_recall = 0.0
-        best_f1 = 0.0
-        best_confusion = 0.0
-        best_average_precision = 0.0
 
         for epoch in range(num_epochs):
             print(f'Epoch {epoch}/{num_epochs - 1}')
@@ -163,11 +185,7 @@ def train():
                     model.eval()   # Set model to evaluate mode
 
                 running_loss = 0.0
-
-                num_true_pos = 0
-                num_true_neg = 0
-                num_false_pos = 0
-                num_false_neg = 0
+                running_corrects = 0
 
                 # Iterate over data.
                 for inputs, labels in dataloaders[phase]:
@@ -190,26 +208,21 @@ def train():
                             loss.backward()
                             optimizer.step()
 
-                    # statistics
-                    num_true_pos += ((preds == 1) & (target == 1)).sum().item()
-                    num_false_pos += ((preds == 1) & (target == 0)).sum().item()
-                    num_true_neg += ((preds == 0) & (target == 0)).sum().item()
-                    num_false_neg += ((preds == 0) & (target == 1)).sum().item()                    
+                    # statistics     
+                    running_corrects += (preds == target).sum().item()               
                     running_loss += loss.item() * inputs.size(0)
+                    
                 if phase == 'train':
                     scheduler.step()
 
                 epoch_loss = running_loss / dataset_sizes[phase]
-                epoch_acc = (num_true_pos + num_true_neg) / dataset_sizes[phase]
+                epoch_acc = running_corrects / dataset_sizes[phase]
 
                 print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
 
                 # deep copy the model
                 if phase == 'val' and epoch_acc > best_acc:
                     best_acc = epoch_acc
-                    best_precision = num_true_pos / (num_true_pos + num_false_pos)
-                    best_recall = num_true_pos / (num_true_pos + num_false_neg)
-                    best_f1 = 2 * ((best_precision * best_recall) / (best_precision + best_recall))
                     print("using this epoch")
                     torch.save(model.state_dict(), temp_model_path)
 
@@ -224,14 +237,7 @@ def train():
 
         torch.save(model.state_dict(), model_path)
 
-        statistics = {
-            "accuracy": best_acc,
-            "precision": best_precision,
-            "recall": best_recall,
-            "f1": best_f1,
-            "confusion": best_confusion,
-            "average_precision": best_average_precision
-        }
+        statistics = evaluate(model, 'val')
 
         print(statistics)
 
