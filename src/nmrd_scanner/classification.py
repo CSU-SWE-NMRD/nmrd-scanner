@@ -1,6 +1,7 @@
 import sys
 import time
 import os
+import shutil
 import torch
 from PIL import Image
 import torch.nn as nn
@@ -217,14 +218,22 @@ class ClassificationModel:
     def record_correction(self, file_path, true_label):
         """Keeps track of corrections for later retraining"""
         
-        if true_label == 'Normal':
-            self.corrections[file_path] = 0
-        elif true_label == 'Pneumonia':
-            self.corrections[file_path] = 1
+        self.corrections[file_path] = true_label.upper()
     
     def retrain(self):
-        print("retraining model")
-        print(self.corrections)
+        """Copies images into training dataset and trains the model"""
+        
+        print('retraining model')
+        
+        train_dir = self.image_datasets['train'].root
+        
+        for file_path, label in self.corrections.items():
+            file_name = os.path.basename(file_path)
+            out_file = train_dir + f'/{label}/{file_name}'
+            print(f'Copying {file_path} into {out_file}')
+            shutil.copy(file_path, out_file)
+        
+        self.train()
     
     def visualize(self, num_images=6):
         model = self.model
