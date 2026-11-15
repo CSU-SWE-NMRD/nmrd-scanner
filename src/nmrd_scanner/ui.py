@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import Label, filedialog, ttk
 from PIL import Image, ImageTk
-from swe_project import classification
+from nmrd_scanner import classification
 
 def main():
     model = classification.ClassificationModel()

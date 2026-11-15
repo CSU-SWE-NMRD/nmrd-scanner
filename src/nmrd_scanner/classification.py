@@ -14,7 +14,7 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import matplotlib.pyplot as plt
 
-from swe_project import metrics
+from nmrd_scanner import metrics
     
 _DATA_DIR = 'data/chest_xray'
 _MODEL_PATH = 'best_model_params.pt'

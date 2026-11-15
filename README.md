@@ -22,7 +22,7 @@ The NMRD Pneumonia X-Ray Scanner app uses a computer vision model in order to cl
 ### Executing program
 
 * Open a terminal in the root directory of the project
-* Run the command `uv run swe-project`
+* Run the command `uv run nmrd-scanner`
 
 ## Help
 
