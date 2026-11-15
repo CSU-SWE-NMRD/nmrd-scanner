@@ -4,6 +4,9 @@ from PIL import Image, ImageTk
 from swe_project import classification
 
 def main():
+    model = classification.ClassificationModel()
+    model.load_trained()
+    
     root = tk.Tk()
     root.title("NMRD Pneumonia X-Ray Scanner")
     root.geometry("1000x800")
@@ -109,7 +112,7 @@ def main():
             feedback_status_label.pack(side=tk.LEFT, padx=(5,0))
             root.update_idletasks()
             
-            classification.record_correction(file_path, true_label)
+            model.record_correction(file_path, true_label)
             feedback_status_label.config(text="Reported", fg=SUCCESS_COLOR)
             run_image()
             
@@ -150,7 +153,7 @@ def main():
         root.update_idletasks()
 
         try:
-            result, confidence = classification.predict(file_path)
+            result, confidence = model.predict(file_path)
             result_label.config(text=f"Result: {result}", fg=TEXT_MAIN)
             confidence_label.config(text=f"Confidence: {confidence:.2%}")
         except Exception as e:
@@ -221,12 +224,9 @@ def main():
         padx=12,
         pady=6,
         cursor="hand2",
-        command = classification.retrain_model
+        command = model.retrain
     )
     retrain_button.pack(side=tk.RIGHT)
-
-    
     
     root.mainloop()
-if __name__ == "__main__":
-    main()
+
